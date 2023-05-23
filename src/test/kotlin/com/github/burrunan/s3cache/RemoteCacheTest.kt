@@ -62,30 +62,34 @@ class RemoteCacheTest : BaseGradleTest() {
 
         @JvmStatic
         private fun gradleVersionAndSettings(): Iterable<Arguments> {
-            if (!isCI) {
-                // Use only the minimum supported Gradle version to make the test faster
-                return listOf(arguments("4.1", ConfigurationCache.OFF))
-            }
-            return mutableListOf<Arguments>().apply {
+            val gradles = mutableListOf<Arguments>().apply {
+                // https://docs.gradle.org/current/userguide/compatibility.html
                 if (JavaVersion.current() <= JavaVersion.VERSION_1_8) {
                     add(arguments("4.1", ConfigurationCache.OFF))
                     add(arguments("4.4.1", ConfigurationCache.OFF))
                 }
                 if (JavaVersion.current() <= JavaVersion.VERSION_12) {
-                    addAll(
-                        listOf(
-                            arguments("5.6.2", ConfigurationCache.OFF),
-                            arguments("5.4.1", ConfigurationCache.OFF),
-                            arguments("4.10.2", ConfigurationCache.OFF)
-                        )
-                    )
+                    add(arguments("5.6.2", ConfigurationCache.OFF))
+                    add(arguments("5.4.1", ConfigurationCache.OFF))
+                    add(arguments("4.10.2", ConfigurationCache.OFF))
                 }
-                add(arguments("6.0", ConfigurationCache.OFF))
-                add(arguments("6.5", ConfigurationCache.OFF))
-                add(arguments("7.0", ConfigurationCache.OFF))
-                add(arguments("7.4.2", ConfigurationCache.OFF))
-                // Configuration cache supports custom caches since 7.5 only: https://github.com/gradle/gradle/issues/14874
-                add(arguments("7.5", ConfigurationCache.ON))
+                if (JavaVersion.current() < JavaVersion.VERSION_17) {
+                    add(arguments("6.0", ConfigurationCache.OFF))
+                    add(arguments("6.5", ConfigurationCache.OFF))
+                    add(arguments("7.0", ConfigurationCache.OFF))
+                }
+                if (JavaVersion.current() < JavaVersion.VERSION_19) {
+                    add(arguments("7.4.2", ConfigurationCache.OFF))
+                    // Configuration cache supports custom caches since 7.5 only: https://github.com/gradle/gradle/issues/14874
+                    add(arguments("7.5", ConfigurationCache.ON))
+                }
+                add(arguments("7.6.1", ConfigurationCache.ON))
+                add(arguments("8.1.1", ConfigurationCache.ON))
+            }
+
+            return when (isCI) {
+                true -> gradles
+                else -> listOf(gradles.first(), gradles.last()) // Run only newest version compatible with current java
             }
         }
     }
